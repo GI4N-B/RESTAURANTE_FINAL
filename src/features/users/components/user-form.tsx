@@ -13,7 +13,7 @@ export function UserForm() {
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: { company_id: 'TU_COMPANY_ID_AQUI' } // En producción, tomar del Auth Context
+    defaultValues: { company_id: 'TU_COMPANY_ID_AQUI', permissions: [] } // En producción, tomar del Auth Context
   });
 
   useEffect(() => {

@@ -14,7 +14,6 @@ export async function loginWithEmail(formData: FormData): Promise<AuthResponse> 
 
   if (error) return { success: false, error: error.message };
 
-  // Verificación simulada y preparada estructuralmente para 2FA (TOTP)
   const { data: factors, error: mfaError } = await supabase.auth.mfa.listFactors();
   if (!mfaError && factors && factors.totp.length > 0) {
     return { success: true, twoFactorRequired: true };
@@ -40,28 +39,44 @@ export async function loginWithMagicLink(formData: FormData): Promise<AuthRespon
 }
 
 export async function loginWithPIN(pin: string, email: string): Promise<AuthResponse> {
+  const { verifyPin } = await import('@/lib/crypto');
   const supabase = await createClient();
-  
-  // En un esquema SaaS de restaurantes, validamos el PIN asociado al empleado
-  // utilizando una query segura en una tabla dedicada o metadatos de usuario estructurados.
-  const { data: userProfile, error: profileError } = await supabase
-    .from('staff_profiles')
-    .select('user_id, encrypted_pin')
+
+  // Validar formato PIN (4 dígitos)
+  if (!pin || !/^\d{4}$/.test(pin)) {
+    return { success: false, error: 'PIN debe ser 4 dígitos.' };
+  }
+
+  // 1. Buscar usuario en user_profiles
+  const { data: userData, error: userError } = await supabase
+    .from('user_profiles')
+    .select('id, email, pin_hash, pin_salt')
     .eq('email', email)
     .single();
 
-  if (profileError || !userProfile) {
-    return { success: false, error: 'Credenciales de terminal inválidas.' };
+  if (userError || !userData) {
+    return { success: false, error: 'Usuario no encontrado.' };
   }
 
-  // Enfoque funcional utilizando Supabase OTP vía formato específico si se desea firmar la sesión,
-  // o haciendo uso de un inicio de sesión controlado por el servidor (Custom Token Generation / Admin Sign In link).
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email,
-    password: `PIN_SECRET_SALT_${pin}` // Mapeo determinista estructurado para autenticación local en tablets POS
+  // 2. Validar PIN con hash seguro
+  if (!userData.pin_hash || !userData.pin_salt) {
+    return { success: false, error: 'Usuario no tiene PIN configurado.' };
+  }
+
+  const isValid = verifyPin(pin, userData.pin_hash, userData.pin_salt);
+  if (!isValid) {
+    return { success: false, error: 'PIN incorrecto.' };
+  }
+
+  // 3. Crear sesión segura: Usar admin API para generar tokens sin requerir contraseña
+  const adminClient = await import('@/lib/supabase/admin').then(m => m.default);
+  const { data: sessionData, error: sessionError } = await adminClient.auth.admin.createSession({
+    user_id: userData.id,
   });
 
-  if (error) return { success: false, error: 'PIN incorrecto.' };
+  if (sessionError || !sessionData) {
+    return { success: false, error: 'Error al crear sesión.' };
+  }
 
   revalidatePath('/', 'layout');
   return { success: true };

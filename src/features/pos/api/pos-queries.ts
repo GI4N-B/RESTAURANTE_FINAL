@@ -10,8 +10,8 @@ export const usePOSCatalog = () => {
     queryFn: async () => {
       const supabase = createClient();
       const [categoriesRes, productsRes] = await Promise.all([
-        supabase.from('pos_categories').select('*').order('sort_order'),
-        supabase.from('pos_products').select('*').eq('is_active', true)
+        supabase.from('menu_categories').select('*').order('sort_order'),
+        supabase.from('menu_items').select('*').eq('is_active', true)
       ]);
       
       if (categoriesRes.error) throw categoriesRes.error;
@@ -51,7 +51,7 @@ export const useCheckout = () => {
     mutationFn: async ({ cart, total, method }: { cart: CartItem[], total: number, method: PaymentMethod }) => {
       // 1. Crear la Orden
       const { data: order, error: orderError } = await supabase
-        .from('pos_orders')
+        .from('orders')
         .insert({ total, payment_method: method, status: 'PAID' })
         .select()
         .single();
@@ -68,7 +68,7 @@ export const useCheckout = () => {
         notes: item.notes
       }));
 
-      const { error: itemsError } = await supabase.from('pos_order_items').insert(orderItems);
+      const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
 
       return order;

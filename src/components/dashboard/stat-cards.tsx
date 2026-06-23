@@ -1,6 +1,9 @@
+'use client';
+
 import { ArrowUpRight, ArrowDownRight, DollarSign, ReceiptText, Users, Clock } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 const stats = [
   {
@@ -65,39 +68,72 @@ function Sparkline({ data }: { data: number[] }) {
   )
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 10 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: "easeOut" },
+  },
+};
+
 export function StatCards() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <motion.div
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {stats.map((stat) => (
-        <Card key={stat.label} className="gap-0 p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-secondary text-muted-foreground">
-                <stat.icon className="size-[18px]" />
+        <motion.div
+          key={stat.label}
+          variants={itemVariants}
+          className="h-full"
+        >
+          <Card className="gap-0 p-5 h-full">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-secondary text-muted-foreground transition-all duration-200 group-hover:bg-secondary/80">
+                  <stat.icon className="size-[18px]" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">{stat.label}</span>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">{stat.label}</span>
+              <Sparkline data={stat.spark} />
             </div>
-            <Sparkline data={stat.spark} />
-          </div>
-          <div className="mt-4 flex items-end justify-between">
-            <p className="text-3xl font-semibold tracking-tight text-foreground">{stat.value}</p>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <span
-              className={cn(
-                "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-semibold",
-                stat.up
-                  ? "bg-primary/15 text-primary"
-                  : "bg-destructive/15 text-destructive",
-              )}
-            >
-              {stat.up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-              {stat.delta}
-            </span>
-            <span className="text-xs text-muted-foreground">{stat.sub}</span>
-          </div>
-        </Card>
+            <div className="mt-4 flex items-end justify-between">
+              <p className="text-3xl font-semibold tracking-tight text-foreground">{stat.value}</p>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-semibold transition-colors duration-200",
+                  stat.up
+                    ? "bg-primary/15 text-primary"
+                    : "bg-destructive/15 text-destructive",
+                )}
+              >
+                {stat.up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
+                {stat.delta}
+              </span>
+              <span className="text-xs text-muted-foreground">{stat.sub}</span>
+            </div>
+          </Card>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
+

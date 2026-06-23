@@ -4,7 +4,7 @@ export const movementSchema = z.object({
   inventory_id: z.string().uuid(),
   location_id: z.string().uuid(),
   movement_type: z.enum(['PURCHASE', 'WASTE', 'ADJUSTMENT', 'PRODUCTION']),
-  quantity: z.number().nonzero('La cantidad no puede ser cero'),
+  quantity: z.number().refine((val) => val !== 0, { message: 'La cantidad no puede ser cero' }),
   unit_cost: z.number().min(0).optional(),
   notes: z.string().min(3, 'Debe incluir una justificación o nota'),
 });

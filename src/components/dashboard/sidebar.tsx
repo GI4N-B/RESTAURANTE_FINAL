@@ -57,21 +57,26 @@ export function Sidebar() {
               key={item.label}
               onClick={() => setActive(item.label)}
               className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground hover:shadow-sm",
               )}
             >
               <item.icon
                 className={cn(
-                  "size-[18px] shrink-0",
+                  "size-[18px] shrink-0 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
                 )}
               />
               <span className="flex-1 text-left">{item.label}</span>
               {item.badge && (
-                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                <span className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                  isActive
+                    ? "bg-primary/20 text-primary animate-pulse"
+                    : "bg-secondary text-secondary-foreground",
+                )}>
                   {item.badge}
                 </span>
               )}
@@ -85,9 +90,9 @@ export function Sidebar() {
           <button
             key={item.label}
             onClick={() => setActive(item.label)}
-            className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground"
+            className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-foreground hover:shadow-sm"
           >
-            <item.icon className="size-[18px] shrink-0 text-muted-foreground group-hover:text-foreground" />
+            <item.icon className="size-[18px] shrink-0 text-muted-foreground transition-colors duration-200 group-hover:text-foreground" />
             <span>{item.label}</span>
           </button>
         ))}

@@ -17,7 +17,9 @@ export const updateSession = async (request: NextRequest) => {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          );
           response = NextResponse.next({
             request,
           });
@@ -33,11 +35,11 @@ export const updateSession = async (request: NextRequest) => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Rutas protegidas vs públicas
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                     request.nextUrl.pathname.startsWith('/register') ||
-                     request.nextUrl.pathname.startsWith('/forgot-password') ||
-                     request.nextUrl.pathname.startsWith('/reset-password');
+  const isAuthPage =
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/register') ||
+    request.nextUrl.pathname.startsWith('/forgot-password') ||
+    request.nextUrl.pathname.startsWith('/reset-password');
 
   if (!user && !isAuthPage && request.nextUrl.pathname !== '/') {
     return NextResponse.redirect(new URL('/login', request.url));
