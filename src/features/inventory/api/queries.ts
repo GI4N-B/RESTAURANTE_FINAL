@@ -3,36 +3,49 @@ import { createClient } from '@/lib/supabase/client';
 import { InventoryItem, InventoryMovement } from '../types';
 import { registerMovementAction, registerTransferAction } from './server-actions';
 
-export const useInventoryStock = (locationId: string) => {
+export const useInventoryStock = (locationId: string, searchQuery?: string) => {
   return useQuery({
-    queryKey: ['inventory', locationId],
+    queryKey: ['inventory', locationId, searchQuery],
     queryFn: async () => {
       const supabase = createClient();
-      const { data, error } = await supabase
+      let query = supabase
         .from('inventory_stock')
         .select('*, product:pos_products(name, sku, category)')
-        .eq('location_id', locationId)
-        .order('current_stock', { ascending: true });
+        .eq('location_id', locationId);
+
+      // Búsqueda por nombre de producto
+      if (searchQuery?.trim()) {
+        query = query.or(`product.name.ilike.%${searchQuery}%,product.sku.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query.order('current_stock', { ascending: true });
       if (error) throw error;
       return data as InventoryItem[];
-    }
+    },
+    staleTime: 30000, // 30 segundos
   });
 };
 
-export const useKardex = (inventoryId: string | null) => {
+export const useKardex = (inventoryId: string | null, limit?: number) => {
   return useQuery({
-    queryKey: ['kardex', inventoryId],
+    queryKey: ['kardex', inventoryId, limit],
     enabled: !!inventoryId,
     queryFn: async () => {
       const supabase = createClient();
-      const { data, error } = await supabase
+      let query = supabase
         .from('inventory_movements')
         .select('*, user:user_profiles(full_name)')
         .eq('inventory_id', inventoryId)
         .order('created_at', { ascending: false });
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as (InventoryMovement & { user: { full_name: string } })[];
-    }
+    },
   });
 };
 

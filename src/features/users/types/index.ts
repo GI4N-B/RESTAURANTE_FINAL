@@ -16,5 +16,15 @@ export interface UserProfile {
   location_id: string | null; // ABAC: A qué sede pertenece
   permissions: string[]; // RBAC overrides: Permisos específicos granulares
   pin_hash?: string;
+  pin_salt?: string;
+
+  // Soft deletes
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+
+  // Auditing
   created_at: string;
+  created_by?: string;
+  updated_at?: string;
+  updated_by?: string;
 }

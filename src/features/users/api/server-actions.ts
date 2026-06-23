@@ -86,6 +86,9 @@ export async function createUserAction(data: UserFormData) {
 }
 
 export async function updateUserAction(id: string, data: Partial<UserFormData>) {
+  const supabase = await createClient();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
   if (data.company_id) await verifyAccess(data.company_id, data.location_id);
   const adminClient = createAdminClient();
 
@@ -97,6 +100,8 @@ export async function updateUserAction(id: string, data: Partial<UserFormData>) 
       company_id: data.company_id,
       location_id: data.location_id,
       permissions: data.permissions,
+      updated_at: new Date().toISOString(),
+      updated_by: currentUser?.id,
     })
     .eq('id', id);
 
@@ -105,6 +110,9 @@ export async function updateUserAction(id: string, data: Partial<UserFormData>) 
 }
 
 export async function suspendUserAction(id: string, suspend: boolean) {
+  const supabase = await createClient();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
   const adminClient = createAdminClient();
 
   await adminClient.auth.admin.updateUserById(id, {
@@ -115,6 +123,8 @@ export async function suspendUserAction(id: string, suspend: boolean) {
     .from('user_profiles')
     .update({
       status: suspend ? 'SUSPENDED' : 'ACTIVE',
+      updated_at: new Date().toISOString(),
+      updated_by: currentUser?.id,
     })
     .eq('id', id);
 
@@ -122,18 +132,50 @@ export async function suspendUserAction(id: string, suspend: boolean) {
 }
 
 export async function deleteUserAction(id: string) {
+  const supabase = await createClient();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
   const adminClient = createAdminClient();
-  const { error } = await adminClient.auth.admin.deleteUser(id);
-  if (error) throw new Error(error.message);
+
+  // Soft delete: marcar como eliminado sin borrar la fila
+  const { error: softDeleteError } = await adminClient
+    .from('user_profiles')
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: currentUser?.id,
+      status: 'INACTIVE',
+    })
+    .eq('id', id);
+
+  if (softDeleteError) throw new Error(softDeleteError.message);
+
+  // Opcionalmente: ban de la cuenta de auth
+  await adminClient.auth.admin.updateUserById(id, {
+    ban_duration: '876000h',
+  });
+
   return { success: true };
 }
 
 export async function resetPasswordAction(id: string, newPassword: string) {
+  const supabase = await createClient();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
   const adminClient = createAdminClient();
   const { error } = await adminClient.auth.admin.updateUserById(id, {
     password: newPassword,
   });
   if (error) throw new Error(error.message);
+
+  // Auditar cambio de contraseña
+  await adminClient
+    .from('user_profiles')
+    .update({
+      updated_at: new Date().toISOString(),
+      updated_by: currentUser?.id,
+    })
+    .eq('id', id);
+
   return { success: true };
 }
 
