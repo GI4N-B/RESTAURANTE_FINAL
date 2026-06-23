@@ -290,19 +290,148 @@ Patrón Apple: subtiles, 200-300ms, consistentes en toda la app.
 
 ---
 
-## 🚀 PRÓXIMOS PASOS (40% RESTANTE)
+---
 
-### Sprint 4: Funcionalidades (Días 11-13)
-- [ ] Paginación en tablas usuarios
-- [ ] Búsqueda con debounce
-- [ ] Soft deletes (deleted_at field)
-- [ ] Auditing (updated_by, deleted_by)
+### ✅ SPRINT 4: FUNCIONALIDADES (COMPLETADO)
 
-### Sprint 5: Pulido (Días 14-15)
-- [ ] Tests unitarios (Vitest)
+#### 4.1 Paginación en Tablas
+**Componente nuevo:** `src/components/pagination.tsx`
+- ✅ Componente reutilizable con Framer Motion
+- ✅ Navegación: Anterior, números de página, Siguiente
+- ✅ Inteligencia: oculta números si hay muchas páginas
+- ✅ Animaciones: whileHover scale, whileTap para botones
+
+**Integración en UserDataTable:**
+- ✅ Paginación de 20 usuarios por página
+- ✅ Dinamica: totalPages calculado del total
+- ✅ onPageChange resetea la página al buscar
+
+#### 4.2 Búsqueda con Debounce
+**Hook nuevo:** `src/hooks/useDebounce.ts`
+- ✅ Debounce genérico de 300ms
+- ✅ Evita búsquedas excesivas en el servidor
+- ✅ Usado en nombre y email de usuarios
+
+**Integración en Queries:**
+- ✅ `useUsers()` acepta `searchQuery` parámetro
+- ✅ Backend usa `.ilike()` para búsqueda fuzzy
+- ✅ `useInventoryStock()` soporta búsqueda por producto
+
+**User Interface:**
+- ✅ Input con icono Search de Lucide
+- ✅ Placeholder: "Buscar por nombre o email..."
+- ✅ Resetea a página 1 al escribir
+
+#### 4.3 Soft Deletes con Auditing
+**Cambios en tipos:** `src/features/users/types/index.ts`
+- ✅ Agregar `deleted_at: string | null`
+- ✅ Agregar `deleted_by: string | null`
+- ✅ Agregar `updated_at: string`
+- ✅ Agregar `updated_by: string`
+- ✅ Agregar `pin_salt: string` para PBKDF2
+
+**Cambios en server-actions:**
+- ✅ `deleteUserAction()` hace soft delete (no hard delete)
+- ✅ Update `deleted_at = now()` + `deleted_by = currentUser`
+- ✅ Mark como INACTIVE y ban de auth (optional)
+- ✅ `updateUserAction()` registra `updated_at` + `updated_by`
+- ✅ `resetPasswordAction()` registra auditoría
+
+**Cambios en queries:**
+- ✅ Agregar `.is('deleted_at', null)` para excluir soft-deleted
+- ✅ Orden por `created_at DESC` más reciente primero
+- ✅ Count exacto con `{ count: 'exact' }`
+
+#### 4.4 Utilidades de Auditing
+**Archivo nuevo:** `src/lib/auditing.ts`
+- ✅ `logAudit()` - Registra cambios en tabla audit_logs
+- ✅ `getDifferenceObject()` - Calcula cambios before/after
+- ✅ Interfaz `AuditLog` con entity_type, action, changed_fields
+
+Uso:
+```typescript
+const changes = getDifferenceObject(oldUser, newUser);
+await logAudit({
+  entity_type: 'user',
+  entity_id: user.id,
+  action: 'update',
+  changed_fields: changes,
+});
+```
+
+#### 4.5 Hooks Utilitarios
+**Hook:** `src/hooks/useToastError.ts`
+- ✅ Manejo centralizado de errores con toasts
+- ✅ Soporta Error objects, strings, unknowns
+- ✅ Mensaje por defecto customizable
+
+Uso:
+```typescript
+const { handleError } = useToastError();
+try { ... } catch (err) { handleError(err, 'Acción fallida'); }
+```
+
+**Barril:** `src/hooks/index.ts`
+- ✅ Exporta todos los hooks en un lugar
+
+#### 4.6 Mejoras a UserDataTable
+```typescript
+// Antes: Array simple de usuarios
+const { data: users } = useUsers(companyId);
+
+// Ahora: Respuesta paginada + búsqueda
+const { data: response } = useUsers(companyId, {
+  page: 1,
+  limit: 20,
+  searchQuery: debouncedSearch,
+});
+
+const users = response?.users || [];
+const total = response?.total;
+const totalPages = response?.totalPages;
+```
+
+Visual improvements:
+- ✅ Animación de entrada (stagger) para filas
+- ✅ Row hover con fondo suave
+- ✅ Search input con icono
+- ✅ Paginación con controles animados
+- ✅ Info de resultados: "Mostrando X de Y"
+- ✅ Loading spinner mientras fetcha
+
+#### 4.7 Validaciones Mejoradas
+**Inventory Schemas:**
+- ✅ Más tipos: SALE, TRANSFER_OUT
+- ✅ Validación de ubicaciones diferentes en transfer
+- ✅ reference_id para PO/Invoice
+- ✅ Max 500 caracteres en notes
+- ✅ Nuevo schema: `stockAlertSchema`
+
+**Commit:** `6c52953` - Sprint 4 completado
+
+---
+
+## 📊 PROGRESO TOTAL: 80% ✅
+
+| Sprint | Estado | Horas Est. | Completado |
+|--------|--------|-----------|-----------|
+| 1: Seguridad | ✅ Completo | 2 | 2 |
+| 2: Arquitectura | ✅ Completo | 3 | 3 |
+| 3: UI/UX | ✅ Completo | 5 | 5 |
+| 4: Funcionalidades | ✅ Completo | 3 | 3 |
+| 5: Pulido | ⏳ En progreso | 2 | - |
+| **TOTAL** | **80%** | **15** | **13** |
+
+---
+
+## 🚀 PRÓXIMO PASO: SPRINT 5 (20% RESTANTE)
+
+### Sprint 5: Pulido & Testing
+- [ ] Tests unitarios con Vitest
+- [ ] E2E tests con Playwright
 - [ ] Performance optimizations
 - [ ] PWA setup
-- [ ] Documentación README
+- [ ] README + Documentación
 
 ---
 
@@ -383,4 +512,4 @@ Si hay errores en deploy:
 
 ---
 
-**Última actualización:** 2026-06-22 | **Próxima sesión:** Sprint 4 - Funcionalidades
+**Última actualización:** 2026-06-22 | **Estado Actual:** Sprint 4 completado (80% del plan)
