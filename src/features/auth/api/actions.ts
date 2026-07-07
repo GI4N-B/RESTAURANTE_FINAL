@@ -40,6 +40,7 @@ export async function loginWithMagicLink(formData: FormData): Promise<AuthRespon
 
 export async function loginWithPIN(pin: string, email: string): Promise<AuthResponse> {
   const { verifyPin } = await import('@/lib/crypto');
+  const { createClient } = await import('@/lib/supabase/server');
   const supabase = await createClient();
 
   // Validar formato PIN (4 dígitos)
@@ -68,13 +69,19 @@ export async function loginWithPIN(pin: string, email: string): Promise<AuthResp
     return { success: false, error: 'PIN incorrecto.' };
   }
 
-  // 3. Crear sesión segura: Usar admin API para generar tokens sin requerir contraseña
-  const adminClient = await import('@/lib/supabase/admin').then(m => m.default);
-  const { data: sessionData, error: sessionError } = await adminClient.auth.admin.createSession({
-    user_id: userData.id,
+  // 3. Crear sesión segura usando RPC (sin exponer service role key)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('create_user_session', {
+    p_user_id: userData.id,
   });
 
-  if (sessionError || !sessionData) {
+  if (rpcError || !rpcData?.success) {
+    return { success: false, error: 'Error al crear sesión.' };
+  }
+
+  // 4. Intercambiar el auth_code por una sesión
+  const { error: sessionError } = await supabase.auth.exchangeCodeForSession(rpcData.auth_code);
+
+  if (sessionError) {
     return { success: false, error: 'Error al crear sesión.' };
   }
 

@@ -3,9 +3,7 @@ import { z } from 'zod';
 export const movementSchema = z.object({
   inventory_id: z.string().uuid('ID de inventario inválido'),
   location_id: z.string().uuid('ID de ubicación inválido'),
-  movement_type: z.enum(['PURCHASE', 'WASTE', 'ADJUSTMENT', 'PRODUCTION', 'SALE', 'TRANSFER_OUT'], {
-    errorMap: () => ({ message: 'Tipo de movimiento inválido' }),
-  }),
+  movement_type: z.enum(['PURCHASE', 'WASTE', 'ADJUSTMENT', 'PRODUCTION', 'SALE', 'TRANSFER_OUT']).describe('Tipo de movimiento inválido'),
   quantity: z.number().int().refine((n) => n !== 0, {
     message: 'La cantidad debe ser diferente a cero',
   }),

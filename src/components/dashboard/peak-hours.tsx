@@ -8,15 +8,35 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { peakHours } from "@/lib/dashboard-data"
+import { usePeakHours } from "@/features/dashboard/api/dashboard-queries"
+import { useSessionStore } from "@/features/auth/store/session-store"
 
 const config = {
   orders: { label: "Orders", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
-const peak = Math.max(...peakHours.map((p) => p.orders))
-
 export function PeakHours() {
+  const { location_ids } = useSessionStore();
+  const locationId = location_ids?.[0];
+  const { data: peakHoursData, isLoading } = usePeakHours(locationId || '');
+
+  if (isLoading) {
+    return (
+      <Card className="animate-pulse">
+        <CardHeader>
+          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[260px] w-full bg-gray-100 rounded"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const peakHours = peakHoursData || [];
+  const peak = Math.max(...peakHours.map((p) => p.orders), 0);
+
   return (
     <Card>
       <CardHeader>
@@ -40,7 +60,11 @@ export function PeakHours() {
         </ChartContainer>
         <div className="mt-2 flex items-center justify-between border-t border-border pt-4 text-sm">
           <span className="text-muted-foreground">Busiest window</span>
-          <span className="font-medium text-foreground">7:00 PM – 8:00 PM</span>
+          <span className="font-medium text-foreground">
+            {peakHours.length > 0 
+              ? `${peakHours.reduce((max, h) => h.orders > max.orders ? h : max).hour}:00 – ${peakHours.reduce((max, h) => h.orders > max.orders ? h : max).hour + 1}:00`
+              : 'No data'}
+          </span>
         </div>
       </CardContent>
     </Card>

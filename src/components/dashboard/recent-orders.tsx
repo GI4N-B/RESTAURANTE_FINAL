@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,16 +11,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import { recentOrders, type OrderStatus } from "@/lib/dashboard-data"
+import { useRecentOrders } from "@/features/dashboard/api/dashboard-queries"
+import { useSessionStore } from "@/features/auth/store/session-store"
 
-const statusStyles: Record<OrderStatus, string> = {
+const statusStyles: Record<string, string> = {
   preparing: "bg-primary/15 text-primary",
   served: "bg-secondary text-foreground",
   paid: "bg-secondary text-muted-foreground",
   cancelled: "bg-destructive/15 text-destructive",
 }
 
-const statusLabel: Record<OrderStatus, string> = {
+const statusLabel: Record<string, string> = {
   preparing: "Preparing",
   served: "Served",
   paid: "Paid",
@@ -26,6 +29,27 @@ const statusLabel: Record<OrderStatus, string> = {
 }
 
 export function RecentOrders() {
+  const { location_ids } = useSessionStore();
+  const locationId = location_ids?.[0];
+  const { data: orders, isLoading } = useRecentOrders(locationId || '');
+
+  if (isLoading) {
+    return (
+      <Card className="gap-0 overflow-hidden animate-pulse">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
+          <div className="flex flex-col gap-1">
+            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div className="h-8 bg-gray-200 rounded w-20"></div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="h-64 bg-gray-100"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="gap-0 overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
@@ -51,7 +75,7 @@ export function RecentOrders() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {recentOrders.map((order) => (
+            {orders?.map((order) => (
               <TableRow key={order.id} className="border-border">
                 <TableCell className="pl-6 font-medium text-foreground">{order.id}</TableCell>
                 <TableCell className="text-foreground">{order.table}</TableCell>
@@ -73,6 +97,13 @@ export function RecentOrders() {
                 </TableCell>
               </TableRow>
             ))}
+            {(!orders || orders.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No recent orders
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

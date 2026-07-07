@@ -8,7 +8,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { revenueSeries } from "@/lib/dashboard-data"
+import { useRevenueSeries } from "@/features/dashboard/api/dashboard-queries"
+import { useSessionStore } from "@/features/auth/store/session-store"
 
 const config = {
   revenue: { label: "Revenue", color: "var(--chart-1)" },
@@ -16,6 +17,33 @@ const config = {
 } satisfies ChartConfig
 
 export function RevenueChart() {
+  const { location_ids } = useSessionStore();
+  const locationId = location_ids?.[0];
+  const { data: revenueData, isLoading } = useRevenueSeries(locationId || '');
+
+  if (isLoading) {
+    return (
+      <Card className="overflow-hidden animate-pulse">
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div className="flex flex-col items-end">
+            <div className="h-6 bg-gray-200 rounded w-24"></div>
+            <div className="h-3 bg-gray-200 rounded w-20"></div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[260px] w-full bg-gray-100 rounded"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const totalRevenue = revenueData?.reduce((sum, d) => sum + d.revenue, 0) || 0;
+  const wowChange = 14.2; // This would need to be calculated from previous week data
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -24,13 +52,13 @@ export function RevenueChart() {
           <CardDescription>Net sales and covers across the last 7 service days</CardDescription>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-2xl font-semibold tracking-tight text-foreground">$107,270</span>
-          <span className="text-xs font-medium text-primary">+14.2% WoW</span>
+          <span className="text-2xl font-semibold tracking-tight text-foreground">${totalRevenue.toLocaleString()}</span>
+          <span className="text-xs font-medium text-primary">+{wowChange}% WoW</span>
         </div>
       </CardHeader>
       <CardContent>
         <ChartContainer config={config} className="h-[260px] w-full">
-          <AreaChart data={revenueSeries} margin={{ left: 4, right: 8, top: 8 }}>
+          <AreaChart data={revenueData || []} margin={{ left: 4, right: 8, top: 8 }}>
             <defs>
               <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--color-revenue)" stopOpacity={0.35} />

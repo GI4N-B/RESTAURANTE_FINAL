@@ -49,27 +49,26 @@ export const useCheckout = () => {
 
   return useMutation({
     mutationFn: async ({ cart, total, method }: { cart: CartItem[], total: number, method: PaymentMethod }) => {
-      // 1. Crear la Orden
+      // 1. Crear la Orden en pos_orders (tabla unificada para POS)
       const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({ total, payment_method: method, status: 'PAID' })
+        .from('pos_orders')
+        .insert({ 
+          total, 
+          payment_method: method, 
+          status: 'PAID',
+          ticket_number: `POS-${Date.now()}`,
+          items: cart.map(item => ({
+            product_id: item.product.id,
+            quantity: item.quantity,
+            unit_price: item.unit_total,
+            modifiers: item.modifiers,
+            notes: item.notes
+          }))
+        })
         .select()
         .single();
       
       if (orderError) throw orderError;
-
-      // 2. Insertar los items del ticket
-      const orderItems = cart.map(item => ({
-        order_id: order.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        unit_price: item.unit_total,
-        modifiers: item.modifiers,
-        notes: item.notes
-      }));
-
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-      if (itemsError) throw itemsError;
 
       return order;
     },

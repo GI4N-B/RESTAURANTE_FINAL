@@ -3,46 +3,9 @@
 import { ArrowUpRight, ArrowDownRight, DollarSign, ReceiptText, Users, Clock } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
-
-const stats = [
-  {
-    label: "Net revenue",
-    value: "$24,310",
-    delta: "+12.8%",
-    up: true,
-    sub: "vs. last Saturday",
-    icon: DollarSign,
-    spark: [40, 52, 48, 61, 58, 72, 90],
-  },
-  {
-    label: "Orders",
-    value: "561",
-    delta: "+8.2%",
-    up: true,
-    sub: "342 dine-in · 219 togo",
-    icon: ReceiptText,
-    spark: [30, 35, 33, 48, 55, 60, 71],
-  },
-  {
-    label: "Avg. check",
-    value: "$43.33",
-    delta: "+4.1%",
-    up: true,
-    sub: "per cover",
-    icon: Users,
-    spark: [50, 48, 52, 51, 55, 57, 60],
-  },
-  {
-    label: "Avg. ticket time",
-    value: "14m 22s",
-    delta: "-1m 06s",
-    up: true,
-    sub: "kitchen to table",
-    icon: Clock,
-    spark: [70, 64, 66, 58, 55, 50, 44],
-  },
-]
+import { motion, Variants } from "framer-motion"
+import { useStatCards } from "@/features/dashboard/api/dashboard-queries"
+import { useSessionStore } from "@/features/auth/store/session-store"
 
 function Sparkline({ data }: { data: number[] }) {
   const max = Math.max(...data)
@@ -79,7 +42,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, scale: 0.95, y: 10 },
   visible: {
     opacity: 1,
@@ -89,7 +52,31 @@ const itemVariants = {
   },
 };
 
+const iconMap = {
+  DollarSign,
+  ReceiptText,
+  Users,
+  Clock,
+};
+
 export function StatCards() {
+  const { location_ids } = useSessionStore();
+  const locationId = location_ids?.[0];
+  const { data: stats, isLoading } = useStatCards(locationId || '');
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[1, 2, 3, 4].map(i => (
+          <Card key={i} className="p-5 animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
@@ -97,7 +84,7 @@ export function StatCards() {
       initial="hidden"
       animate="visible"
     >
-      {stats.map((stat) => (
+      {stats?.map((stat) => (
         <motion.div
           key={stat.label}
           variants={itemVariants}
@@ -107,11 +94,14 @@ export function StatCards() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-secondary text-muted-foreground transition-all duration-200 group-hover:bg-secondary/80">
-                  <stat.icon className="size-[18px]" />
+                  {(() => {
+                    const Icon = iconMap[stat.icon as keyof typeof iconMap];
+                    return Icon ? <Icon className="size-[18px]" /> : null;
+                  })()}
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">{stat.label}</span>
               </div>
-              <Sparkline data={stat.spark} />
+              <Sparkline data={[40, 52, 48, 61, 58, 72, 90]} />
             </div>
             <div className="mt-4 flex items-end justify-between">
               <p className="text-3xl font-semibold tracking-tight text-foreground">{stat.value}</p>

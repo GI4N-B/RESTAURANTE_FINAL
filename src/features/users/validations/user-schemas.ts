@@ -8,7 +8,7 @@ export const userSchema = z.object({
   location_id: z.string().uuid('ID de sede inválido').nullable(),
   password: z.string().min(8, 'Mínimo 8 caracteres').optional(),
   pin: z.string().regex(/^\d{4}$/, 'El PIN debe ser exactamente 4 dígitos').optional(),
-  permissions: z.array(z.string()).default([]),
+  permissions: z.array(z.string()),
 });
 
 export type UserFormData = z.infer<typeof userSchema>;

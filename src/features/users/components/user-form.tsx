@@ -13,7 +13,13 @@ export function UserForm() {
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: { company_id: 'TU_COMPANY_ID_AQUI', permissions: [] } // En producción, tomar del Auth Context
+    defaultValues: { 
+      company_id: 'TU_COMPANY_ID_AQUI', 
+      permissions: [],
+      location_id: null,
+      password: undefined,
+      pin: undefined
+    }
   });
 
   useEffect(() => {
@@ -24,7 +30,7 @@ export function UserForm() {
         role: selectedUser.role,
         company_id: selectedUser.company_id,
         location_id: selectedUser.location_id,
-        permissions: selectedUser.permissions,
+        permissions: selectedUser.permissions || [],
       });
     } else {
       reset();
@@ -60,6 +66,7 @@ export function UserForm() {
         <div>
           <label className="block text-sm">Rol (RBAC)</label>
           <select {...register('role')} className="border p-2 w-full rounded">
+            <option value="SUPERADMIN">Super Administrador</option>
             <option value="ADMIN">Administrador</option>
             <option value="MANAGER">Gerente de Sede</option>
             <option value="WAITER">Mesero</option>
